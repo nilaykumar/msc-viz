@@ -1,0 +1,116 @@
+#+TITLE: analyzing msc data
+#+author: Nilay Kumar
+#+date: <2022-03-29 Tue>
+
+# ensure that we export both code and results
+#+property: header-args:jupyter-python :exports both :session py :async yes :results raw drawer
+#+property: header-args:sh :exports both :results output
+
+TODO:
+- check to make sure that all the MSCs are valid (there are some that look like
+  49-01 -- what are those?)
+
+Let's begin by importing the MSC data for Advances in Mathematics.
+
+#+begin_src jupyter-python
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+
+filename = 'advances_in_mathematics_2020.csv'
+
+df = pd.read_csv(filename)
+df = df.rename({'class': 'msc',
+           'refclass': 'refmsc'}, axis = 1)
+df.head()
+#+end_src
+
+#+RESULTS:
+:results:
+#+begin_example
+        id                   serial   pub  \
+0  7367631  Advances in Mathematics  2021
+1  7367632  Advances in Mathematics  2021
+2  7367633  Advances in Mathematics  2021
+3  7367634  Advances in Mathematics  2021
+4  7367635  Advances in Mathematics  2021
+
+                                             msc  \
+0           ['05C10', '05C42', '52C10', '05D10']
+1  ['14H10', '14H15', '81T11', '35Q53', '14H70']
+2                             ['55N31', '18F20']
+3                    ['14N35', '14J45', '14J33']
+4                    ['37A55', '46L05', '46L55']
+
+                                              refmsc
+0  ['03D15', '05-01', '05A05', '05A18', '05A99', ...
+1  ['14C17', '14C17', '14C17', '14C35', '14D20', ...
+2  ['18F20', '32S60', '32S60', '54H20', '55N10', ...
+3  ['05E16', '11G35', '11G42', '11G42', '11G42', ...
+4  ['05B45', '18F25', '19M05', '20-02', '20F65', ...
+#+end_example
+:end:
+
+The first step in constructing our graph is to get a list of unique MSCs present
+in the dataset.
+
+#+begin_src jupyter-python
+classes_full = set()
+
+# process the record's classes
+for row in df.itertuples():
+    cl = row.msc
+    clref = row.refmsc
+    classes_full.update([s.strip()[1:-1] for s in cl[1:-1].split(',')])
+    classes_full.update([s.strip()[1:-1] for s in clref[1:-1].split(',')])
+
+# construct a set of the abbreviated 2-digit mscs
+classes_abbrev = set()
+for msc in classes_full:
+    classes_abbrev.add(msc[0:2])
+
+N = len(classes_abbrev)
+print(f'Found N={N} unique 2-digit MSC codes.')
+#+end_src
+
+#+RESULTS:
+:results:
+: Found N=63 unique 2-digit MSC codes.
+:end:
+
+Let's construct the corresponding graph with N vertices. Since we're restricting
+to 2-digit codes, the number of vertices is small enough that we can feasibly
+work with an adjacency matrix. We'll use the set =classes_abbrev= from above as
+our dictionary for translating between matrix indexing and the codes.
+
+#+begin_src jupyter-python :file images/heatmap.png
+all_msc = list(classes_abbrev)
+adj = np.zeros((N, N), dtype = np.int64)
+logadj = np.zeros((N, N), dtype = np.float64)
+for row in df.itertuples():
+    cl = row.msc
+    clref = row.refmsc
+    refmsc_list = [s.strip()[1:-1] for s in clref[1:-1].split(',')]
+    # for each msc associated to the record
+    for msc in [s.strip()[1:-1] for s in cl[1:-1].split(',')]:
+        msc = msc[0:2]
+        # get row index
+        i = all_msc.index(msc)
+        # for each msc in the references of this record
+        for refmsc in refmsc_list:
+            refmsc = refmsc[0:2]
+            j = all_msc.index(refmsc)
+            adj[i][j] += 1
+logadj = np.log1p(adj)
+sns.heatmap(logadj)
+#+end_src
+
+#+RESULTS:
+:results:
+: <AxesSubplot:>
+[[file:images/heatmap.png]]
+:end:
+
+This gives us the weighted graph, whose adjacency matrix (or
+its elementwse-logarithm, really) is displayed here as a heatmap.

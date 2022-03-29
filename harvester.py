@@ -1,21 +1,32 @@
 #!/usr/bin/env python3
 
-import xml.etree.ElementTree as ET
 import requests
+import time
+import xml.etree.ElementTree as ET
 
-def harvest(date_from = '2022-01-01', serial = 'Annals of Mathematics. Second Series', out_file = 'data.csv'):
+def harvest(date_from = '2020-01-01', serial = 'Advances in Mathematics', out_file = 'data.csv', rt = ''):
     csv_header = 'id,serial,pub,class,refclass\n'
-
-    with open(out_file, 'w') as f:
-        # write column names
-        f.write(csv_header)
+    with open(out_file, 'a' if rt else 'w') as f:
+        # write column names if starting a new file
+        if not rt:
+            f.write(csv_header)
         # construct initial query
         query = f'https://oai.zbmath.org/v1/?verb=ListRecords&from={date_from}&metadataPrefix=oai_zb_preview'
-        rt = ''
         while True:
+            #timer_start = time.perf_counter()
             r = requests.get(query + ('&resumptionToken=' + rt if rt else ''))
-            row, resumption = harvest_records(ET.fromstring(r.text), serial)
+            #timer_request = time.perf_counter()
+            #print(f'Time[request]:\t {timer_request - timer_start:0.4f}')
+            try:
+                row, resumption = harvest_records(ET.fromstring(r.text), serial)
+            except(Exception) as e:
+                print('Error occured while parsing XML! Skipping this set of records...')
+                continue
+            #timer_harvest = time.perf_counter()
+            #print(f'Time[harvest]:\t {timer_harvest - timer_request:0.4f}')
             f.write(row)
+            #timer_write = time.perf_counter()
+            #print(f'Time[write]:\t {timer_write - timer_harvest:0.4f}')
             if resumption is None:
                 break
             rt = resumption.text
@@ -42,9 +53,6 @@ def harvest_records(root, target_serial):
         if not oai_zb_preview.findall('./zbmath:serial/', ns):
             continue
         serial = oai_zb_preview.find('./zbmath:serial/zbmath:serial_title', ns).text
-        # if no serial is provided, drop the record
-        if invalid_marker in serial:
-            continue
         # remove any unnecessary whitespace from the serial name
         serial = ' '.join(serial.strip().split())
         # restrict ourselves to the targeted serial
@@ -52,7 +60,7 @@ def harvest_records(root, target_serial):
             continue
         references_element = oai_zb_preview.find('./zbmath:references', ns)
         # if no references are provided, drop the record
-        if invalid_marker in references_element.text:
+        if references_element is None or invalid_marker in references_element.text:
             continue
         references = references_element.findall('./zbmath:reference', ns)
         # we allow duplicates because we might be interesting in seeing
@@ -72,6 +80,3 @@ def harvest_records(root, target_serial):
         csv_string += record_string + '\n'
     return csv_string, resumption
 
-
-if __name__ == '__main__':
-    harvest()
