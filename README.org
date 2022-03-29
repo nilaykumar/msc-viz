@@ -1,4 +1,4 @@
-#+TITLE: README
+#+TITLE: msc-viz
 #+AUTHOR: Nilay Kumar
 
 This project is an attempt to visualize the landscape of research mathematics
