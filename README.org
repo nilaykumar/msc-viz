@@ -1,0 +1,11 @@
+#+TITLE: README
+#+AUTHOR: Nilay Kumar
+
+This project is an attempt to visualize the landscape of research mathematics
+using the 2020 Mathematics Subject Classification (MSC2020) and zbMATH Open
+OAI-PMH API.
+
+todo:
+- timing and performance, look for inefficiencies (XPATH through everything may
+  not be the best idea, parse more incrementally?)
+- replace annals with advances in mathematics (say through 2020)
