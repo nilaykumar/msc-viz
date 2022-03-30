@@ -10,7 +10,7 @@ TODO:
 - check to make sure that all the MSCs are valid (there are some that look like
   49-01 -- what are those?)
 
-Let's begin by importing the MSC data for Advances in Mathematics.
+Let's begin by importing the MSC data.
 
 #+begin_src jupyter-python
 import matplotlib.pyplot as plt
@@ -20,38 +20,18 @@ import seaborn as sns
 
 from sklearn.manifold import spectral_embedding
 
-filename = 'advances_in_mathematics_2020.csv'
+filename = 'mar30_data'
 
-df = pd.read_csv(filename)
+df = pd.read_csv(f'data/{filename}.csv')
 df = df.rename({'class': 'msc',
            'refclass': 'refmsc'}, axis = 1)
-df.head()
+df.drop(df.index[[715]], inplace=True)
 #+end_src
 
 #+RESULTS:
 :results:
-#+begin_example
-        id                   serial   pub  \
-0  7367631  Advances in Mathematics  2021
-1  7367632  Advances in Mathematics  2021
-2  7367633  Advances in Mathematics  2021
-3  7367634  Advances in Mathematics  2021
-4  7367635  Advances in Mathematics  2021
-
-                                             msc  \
-0           ['05C10', '05C42', '52C10', '05D10']
-1  ['14H10', '14H15', '81T11', '35Q53', '14H70']
-2                             ['55N31', '18F20']
-3                    ['14N35', '14J45', '14J33']
-4                    ['37A55', '46L05', '46L55']
-
-                                              refmsc
-0  ['03D15', '05-01', '05A05', '05A18', '05A99', ...
-1  ['14C17', '14C17', '14C17', '14C35', '14D20', ...
-2  ['18F20', '32S60', '32S60', '54H20', '55N10', ...
-3  ['05E16', '11G35', '11G42', '11G42', '11G42', ...
-4  ['05B45', '18F25', '19M05', '20-02', '20F65', ...
-#+end_example
+:end:
+:end:
 :end:
 
 * constructing a weighted graph
@@ -153,24 +133,24 @@ def lapeig(adj, d = 8):
 :end:
 
 Let's try embedding our graph into two-dimensional Euclidean space.
-#+begin_src jupyter-python :file images/map_lapeig.png
+#+begin_src jupyter-python
 df_2d = lapeig((adj + adj.T)/2, 2)
 plt.figure(figsize=(12, 10))
 # ax = sns.scatterplot(data = df_2d, x = df_2d[0], y = df_2d[1], hue = df_2d.index)
 for row in df_2d.itertuples():
-    plt.scatter(row._1, row._2, marker=f'${row.Index}$', s=120)
+    plt.scatter(row._1, row._2, marker=f'${row.Index}$', s=100)
 # the legend is way too long
 #legend = ax.get_legend()
 #legend.remove()
+plt.savefig(f'images/{filename}.png')
 #+end_src
 
 #+RESULTS:
 :results:
-[[file:images/map_lapeig.png]]
+[[file:./.ob-jupyter/9c2828f94be251250a1147be9a3f970932bc2d25.png]]
 :end:
 :end:
-
-The isle of Yin... according to the traveled /A. I. Mathematics/...
+:end:
 
 Is there a natural way to assign height? Perhaps based on popularity? and then
 perhaps smoothed out nicely...

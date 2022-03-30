@@ -5,14 +5,14 @@ This project is an attempt to visualize the landscape of research mathematics
 using the 2020 Mathematics Subject Classification ([[https://zbmath.org/classification/][MSC2020]]) and zbMATH Open
 OAI-PMH API.
 
-[[file:images/map_lapeig.png]]
+[[file:images/mar30_data.png]]
 
 todo:
 - look into some graph embedding algorithms:
   - laplacian eigenmaps:
+    - hue by which codes are the most popular?
     - incorporate height (relative popularity of a code?), draw contours
     - 3-digit MSC codes (3d representation?)
-    - map out data from another journal, how different are the neighbors?
   - ...?
 - requirements.txt
 - readable documentation

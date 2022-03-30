@@ -4,23 +4,32 @@ import requests
 import time
 import xml.etree.ElementTree as ET
 
-def harvest(date_from = '2020-01-01', serial = 'Advances in Mathematics', out_file = 'data.csv', rt = ''):
+def harvest(date_until, date_from = '2020-01-01', out_file = 'data.csv', rt = '',
+            target_serials = ['Advances in Mathematics',
+                              'Communications in Mathematical Physics',
+                              'Mathematische Zeitschrift',
+                              'Duke Mathematical Journal',
+                              'Annales de l\'Institut Fourier',
+                              'Journal of Geometry and Physics',
+                              'Annals of Mathematics. Second Series']):
     csv_header = 'id,serial,pub,class,refclass\n'
     with open(out_file, 'a' if rt else 'w') as f:
         # write column names if starting a new file
         if not rt:
             f.write(csv_header)
         # construct initial query
-        query = f'https://oai.zbmath.org/v1/?verb=ListRecords&from={date_from}&metadataPrefix=oai_zb_preview'
+        query = f'https://oai.zbmath.org/v1/?verb=ListRecords&from={date_from}&until={date_until}&metadataPrefix=oai_zb_preview'
+        num_errors = 0
         while True:
             #timer_start = time.perf_counter()
             r = requests.get(query + ('&resumptionToken=' + rt if rt else ''))
             #timer_request = time.perf_counter()
             #print(f'Time[request]:\t {timer_request - timer_start:0.4f}')
             try:
-                row, resumption = harvest_records(ET.fromstring(r.text), serial)
+                row, resumption = harvest_records(ET.fromstring(r.text), target_serials)
             except(Exception) as e:
                 print('Error occured while parsing XML! Skipping this set of records...')
+                num_errors += 1
                 continue
             #timer_harvest = time.perf_counter()
             #print(f'Time[harvest]:\t {timer_harvest - timer_request:0.4f}')
@@ -34,10 +43,10 @@ def harvest(date_from = '2020-01-01', serial = 'Advances in Mathematics', out_fi
             list_size = resumption.attrib["completeListSize"]
             complete = int(cursor) / int(list_size)
             print(f'{cursor} / {list_size} = {complete * 100:.2f}% \t {rt}')
-        print('...done!')
+        print(f'...done! Encountered {num_errors} unparseable requests.')
 
 
-def harvest_records(root, target_serial):
+def harvest_records(root, target_serials):
     invalid_marker = 'zbMATH'
     # allow omitting namespace for the default namespace
     ns = {'': 'http://www.openarchives.org/OAI/2.0/',
@@ -56,7 +65,7 @@ def harvest_records(root, target_serial):
         # remove any unnecessary whitespace from the serial name
         serial = ' '.join(serial.strip().split())
         # restrict ourselves to the targeted serial
-        if serial != target_serial:
+        if serial not in target_serials:
             continue
         references_element = oai_zb_preview.find('./zbmath:references', ns)
         # if no references are provided, drop the record
