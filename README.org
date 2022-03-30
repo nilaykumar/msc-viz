@@ -2,12 +2,17 @@
 #+AUTHOR: Nilay Kumar
 
 This project is an attempt to visualize the landscape of research mathematics
-using the 2020 Mathematics Subject Classification (MSC2020) and zbMATH Open
+using the 2020 Mathematics Subject Classification ([[https://zbmath.org/classification/][MSC2020]]) and zbMATH Open
 OAI-PMH API.
+
+[[file:images/map_lapeig.png]]
 
 todo:
 - look into some graph embedding algorithms:
-  - laplacian eigenmaps
-  - ...
+  - laplacian eigenmaps:
+    - incorporate height (relative popularity of a code?), draw contours
+    - 3-digit MSC codes (3d representation?)
+    - map out data from another journal, how different are the neighbors?
+  - ...?
 - requirements.txt
 - readable documentation
