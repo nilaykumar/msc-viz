@@ -18,6 +18,8 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
+from sklearn.manifold import spectral_embedding
+
 filename = 'advances_in_mathematics_2020.csv'
 
 df = pd.read_csv(filename)
@@ -52,6 +54,8 @@ df.head()
 #+end_example
 :end:
 
+* constructing a weighted graph
+
 The first step in constructing our graph is to get a list of unique MSCs present
 in the dataset.
 
@@ -70,6 +74,7 @@ classes_abbrev = set()
 for msc in classes_full:
     classes_abbrev.add(msc[0:2])
 
+classes_abbrev = sorted(classes_abbrev)
 N = len(classes_abbrev)
 print(f'Found N={N} unique 2-digit MSC codes.')
 #+end_src
@@ -103,14 +108,72 @@ for row in df.itertuples():
             j = all_msc.index(refmsc)
             adj[i][j] += 1
 logadj = np.log1p(adj)
-sns.heatmap(logadj)
+symm_logadj = (logadj + logadj.T) / 2
+fig = plt.figure()
+ax = sns.heatmap(symm_logadj)
+
+# relabel the axes by the 2-digit MSC code
+labelsx =  ax.get_xticklabels()
+for label in labelsx:
+    label.set_text(classes_abbrev[int(label.get_text())])
+ax.set_xticklabels(labelsx)
+labelsy =  ax.get_yticklabels()
+for label in labelsy:
+    label.set_text(classes_abbrev[int(label.get_text())])
+ax.set_yticklabels(labelsy);
 #+end_src
 
 #+RESULTS:
 :results:
-: <AxesSubplot:>
 [[file:images/heatmap.png]]
 :end:
 
 This gives us the weighted graph, whose adjacency matrix (or
 its elementwse-logarithm, really) is displayed here as a heatmap.
+This heatmap already indicates some interesting behavior.
+
+
+* laplacian eigenmaps
+
+We use =sklearn='s =spectral_embedding=, which uses the technique known as
+Laplacian eigenmaps to embed the graph into a relatively low-dimensional
+Euclidean space. The embedding is designed to embed vertices connected by
+high weight relatively close to one another.
+
+#+begin_src jupyter-python
+def lapeig(adj, d = 8):
+    embedding = spectral_embedding(adj, n_components = d, random_state = 17, eigen_solver='lobpcg')
+    df_embedding = pd.DataFrame(embedding)
+    df_embedding['msc'] = classes_abbrev
+    return df_embedding.set_index('msc')
+#+end_src
+
+#+RESULTS:
+:results:
+:end:
+
+Let's try embedding our graph into two-dimensional Euclidean space.
+#+begin_src jupyter-python :file images/map_lapeig.png
+df_2d = lapeig((adj + adj.T)/2, 2)
+plt.figure(figsize=(12, 10))
+# ax = sns.scatterplot(data = df_2d, x = df_2d[0], y = df_2d[1], hue = df_2d.index)
+for row in df_2d.itertuples():
+    plt.scatter(row._1, row._2, marker=f'${row.Index}$', s=120)
+# the legend is way too long
+#legend = ax.get_legend()
+#legend.remove()
+#+end_src
+
+#+RESULTS:
+:results:
+[[file:images/map_lapeig.png]]
+:end:
+:end:
+
+The isle of Yin... according to the traveled /A. I. Mathematics/...
+
+Is there a natural way to assign height? Perhaps based on popularity? and then
+perhaps smoothed out nicely...
+
+What happens when we take the first 3-digits? Should we expand to a
+3-dimensional representation?
